@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Ticker</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-size: 24px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .ticker {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .scroll {
+            display: inline-block;
+            white-space: nowrap;
+            animation: marquee 20s linear infinite;
+        }
+        @keyframes marquee {
+            from { transform: translateX(100%); }
+            to { transform: translateX(-100%); }
+        }
+    </style>
+</head>
+<body>
+    <div class="ticker">
+        <div class="scroll" id="ticker-text">Loading sports scores...</div>
+    </div>
+    <script>
+        async function fetchScores() {
+            try {
+                let response = await fetch('https://site.api.espn.com/apis/site/v2/sports/top-headlines');
+                let data = await response.json();
+                let headlines = data.headlines.map(h => h.headline).join(" | ");
+                document.getElementById('ticker-text').innerText = headlines;
+            } catch (error) {
+                document.getElementById('ticker-text').innerText = "Error fetching sports news.";
+            }
+        }
+        fetchScores();
+        setInterval(fetchScores, 60000); // Refresh every minute
+    </script>
+</body>
+</html>
