@@ -3,27 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sports Ticker</title>
+    <title>Multi-Sport Live Ticker</title>
     <style>
         body {
             background-color: black;
             color: white;
-            font-size: 24px;
+            font-size: 20px;
             overflow: hidden;
             white-space: nowrap;
-        }
-        .ticker {
-            position: absolute;
-            width: 100%;
-            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
+            height: 100vh;
         }
-        .scroll {
+        .ticker-container {
+            width: 100%;
+            overflow: hidden;
+            position: absolute;
+            bottom: 10px;
+        }
+        .ticker {
             display: inline-block;
             white-space: nowrap;
             animation: marquee 20s linear infinite;
+            display: flex;
+            align-items: center;
+        }
+        .game {
+            display: flex;
+            align-items: center;
+            margin-right: 40px;
+        }
+        .team-logo {
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
         }
         @keyframes marquee {
             from { transform: translateX(100%); }
@@ -32,20 +46,51 @@
     </style>
 </head>
 <body>
-    <div class="ticker">
-        <div class="scroll" id="ticker-text">Loading sports scores...</div>
+    <div class="ticker-container">
+        <div class="ticker" id="ticker-text">Loading sports scores...</div>
     </div>
+
     <script>
+        const sportsAPIs = [
+            { sport: "NFL", url: "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard" },
+            { sport: "NBA", url: "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard" },
+            { sport: "MLB", url: "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard" },
+            { sport: "NCAA MBB", url: "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard" },
+            { sport: "NCAA WBB", url: "https://site.api.espn.com/apis/site/v2/sports/basketball/womens-college-basketball/scoreboard" },
+            { sport: "NCAA BASE", url: "https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/scoreboard" }
+        ];
+
         async function fetchScores() {
-            try {
-                let response = await fetch('https://site.api.espn.com/apis/site/v2/sports/top-headlines');
-                let data = await response.json();
-                let headlines = data.headlines.map(h => h.headline).join(" | ");
-                document.getElementById('ticker-text').innerText = headlines;
-            } catch (error) {
-                document.getElementById('ticker-text').innerText = "Error fetching sports news.";
+            let allScores = [];
+
+            for (let api of sportsAPIs) {
+                try {
+                    let response = await fetch(api.url);
+                    let data = await response.json();
+
+                    let games = data.events.map(event => {
+                        let home = event.competitions[0].competitors[0];
+                        let away = event.competitions[0].competitors[1];
+
+                        return `
+                            <div class="game">
+                                <img class="team-logo" src="${home.team.logo}" alt="${home.team.displayName}">
+                                <span>${home.team.displayName} ${home.score} - ${away.score} ${away.team.displayName}</span>
+                                <img class="team-logo" src="${away.team.logo}" alt="${away.team.displayName}">
+                            </div>
+                        `;
+                    });
+
+                    allScores = allScores.concat(games);
+                } catch (error) {
+                    console.error(`Error fetching ${api.sport} scores:`, error);
+                }
             }
+
+            let tickerHTML = allScores.length > 0 ? allScores.join("") : "<span>No live scores available.</span>";
+            document.getElementById('ticker-text').innerHTML = tickerHTML;
         }
+
         fetchScores();
         setInterval(fetchScores, 60000); // Refresh every minute
     </script>
